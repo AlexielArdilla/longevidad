@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VivirMás AI - Calculadora de Longevidad Pro</title>
+    <!-- Tailwind CSS para el diseño -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React y Babel para ejecutar JSX en el navegador -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .animate-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .animate-spin-custom {
+            animation: spin-slow 12s linear infinite;
+        }
+
+        /* Ocultar flechas en inputs numéricos */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc]">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Componente de Iconos SVG Integrados
+        const Icon = ({ name, color = "currentColor" }) => {
+            const icons = {
+                heart: <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />,
+                user: (
+                    <React.Fragment>
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </React.Fragment>
+                ),
+                shield: <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />,
+                activity: <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />,
+                book: (
+                    <React.Fragment>
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                        <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5v-15z" />
+                    </React.Fragment>
+                ),
+                smoke: (
+                    <React.Fragment>
+                        <path d="M18 12c0-4-4-4-4-8" />
+                        <path d="M14 12c0-4-4-4-4-8" />
+                        <path d="M22 12c0-4-4-4-4-8" />
+                        <path d="M2 18h16v3H2z" />
+                    </React.Fragment>
+                ),
+                moon: <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />,
+                sun: (
+                    <React.Fragment>
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </React.Fragment>
+                ),
+                users: (
+                    <React.Fragment>
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </React.Fragment>
+                ),
+                refresh: (
+                    <React.Fragment>
+                        <path d="M23 4v6h-6" />
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                    </React.Fragment>
+                ),
+                alert: (
+                    <React.Fragment>
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </React.Fragment>
+                ),
+                info: (
+                    <React.Fragment>
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </React.Fragment>
+                ),
+                chevron: <polyline points="9 18 15 12 9 6" />
+            };
+
+            return (
+                <svg 
+                    width="24" height="24" viewBox="0 0 24 24" fill="none" 
+                    stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    className="inline-block"
+                >
+                    {icons[name] || icons.heart}
+                </svg>
+            );
+        };
+
+        const App = () => {
+            const [step, setStep] = useState(0);
+            const [answers, setAnswers] = useState({});
+            const [showDisclaimer, setShowDisclaimer] = useState(true);
+
+            const BASE_AGE = 75;
+
+            const questions = [
+                { id: 'age', title: '¿Qué edad tienes actualmente?', type: 'number', icon: 'user', placeholder: 'Ej. 30' },
+                { 
+                    id: 'sex', title: 'Sexo Biológico', type: 'select', icon: 'heart',
+                    options: [
+                        { label: 'Femenino', val: 'f', impact: 4, desc: 'Ventaja cromosómica y hormonal (+4 años)' },
+                        { label: 'Masculino', val: 'm', impact: 0, desc: 'Base de cálculo estándar' }
+                    ]
+                },
+                { 
+                    id: 'edu', title: 'Estatus Socioeconómico y Educación', type: 'select', icon: 'book',
+                    options: [
+                        { label: 'Título Universitario / Ingresos altos', val: 'h', impact: 11, desc: 'Menor estrés y mejor acceso (+11 años)' },
+                        { label: 'Educación Media / Ingresos medios', val: 'm', impact: 5, desc: 'Nivel protector estándar (+5 años)' },
+                        { label: 'Básica o nula / Ingresos bajos', val: 'l', impact: -11, desc: 'Mayor exposición a riesgos estructurales (-11 años)' }
+                    ]
+                },
+                { 
+                    id: 'smoke', title: 'Hábito de Tabaquismo', type: 'select', icon: 'smoke',
+                    options: [
+                        { label: 'Nunca he fumado', val: 'n', impact: 0, desc: 'Sin daño sistémico acumulado' },
+                        { label: 'Fumador actual', val: 'y', impact: -10, desc: 'Pérdida de una década promedio (-10 años)' },
+                        { label: 'Ex-fumador', val: 'e', impact: -3, desc: 'Persiste daño residual en el ADN (-3 años)' }
+                    ]
+                },
+                { 
+                    id: 'diet', title: 'Patrón Nutricional', type: 'select', icon: 'activity',
+                    options: [
+                        { label: 'Dieta Mediterránea / Plantas / Nueces', val: 'opt', impact: 5, desc: 'Protección de telómeros (+5 años)' },
+                        { label: 'Equilibrada', val: 'avg', impact: 0, desc: 'Impacto neutral' },
+                        { label: 'Muchos ultraprocesados', val: 'bad', impact: -5, desc: 'Estado inflamatorio crónico (-5 años)' }
+                    ]
+                },
+                { 
+                    id: 'social', title: 'Conexión Social', type: 'select', icon: 'users',
+                    options: [
+                        { label: 'Muy integrado y activo', val: 'int', impact: 5, desc: 'Factor protector robusto (+5 años)' },
+                        { label: 'Suelo sentir soledad / Aislamiento', val: 'iso', impact: -10, desc: 'Letal como 15 cigarrillos/día (-10 años)' }
+                    ]
+                },
+                { 
+                    id: 'fitness', title: 'Actividad Física (VO2 Máx)', type: 'select', icon: 'activity',
+                    options: [
+                        { label: 'Entreno regularmente (Fuerza/Cardio)', val: 'hi', impact: 5, desc: 'Alta capacidad cardiorrespiratoria (+5 años)' },
+                        { label: 'Sedentario o poca actividad', val: 'lo', impact: 0, desc: 'Sin factor protector adicional' }
+                    ]
+                },
+                { 
+                    id: 'sleep', title: 'Calidad de Sueño', type: 'select', icon: 'moon',
+                    options: [
+                        { label: 'Duermo 7-8 horas de calidad', val: 'good', impact: 0, desc: 'Reparación biológica óptima' },
+                        { label: 'Menos de 6 horas / Insomnio', val: 'poor', impact: -4, desc: 'Riesgo metabólico y vascular (-4 años)' }
+                    ]
+                },
+                { 
+                    id: 'mindset', title: 'Personalidad (Optimismo)', type: 'select', icon: 'sun',
+                    options: [
+                        { label: 'Soy optimista y disciplinado', val: 'opt', impact: 3, desc: 'Probabilidad de longevidad excepcional (+3 años)' },
+                        { label: 'Suelo ser pesimista', val: 'pes', impact: 0, desc: 'Sin factor protector psicológico' }
+                    ]
+                }
+            ];
+
+            const handleOptionSelect = (id, option) => {
+                setAnswers({ ...answers, [id]: option });
+                setTimeout(() => setStep(step + 1), 300);
+            };
+
+            const calculateResults = () => {
+                let finalLE = BASE_AGE;
+                const currentAge = parseInt(answers.age || 0);
+                Object.keys(answers).forEach(key => {
+                    if (key !== 'age') finalLE += answers[key].impact;
+                });
+                return {
+                    total: finalLE.toFixed(1),
+                    remaining: Math.max(0, finalLE - currentAge).toFixed(1)
+                };
+            };
+
+            const results = calculateResults();
+            const currentProgress = (step / questions.length) * 100;
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-4">
+                    <div className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden flex flex-col min-h-[600px] relative">
+                        
+                        {/* Header */}
+                        <div className="bg-white p-6 pb-2 border-b border-slate-50 sticky top-0 z-20">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2 text-blue-600">
+                                    <Icon name="shield" />
+                                    <span className="font-black text-slate-800 tracking-tight uppercase text-lg">VivirMás AI</span>
+                                </div>
+                                {step > 0 && step <= questions.length && (
+                                    <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-3 py-1 rounded-full uppercase tracking-widest">
+                                        Paso {step} / {questions.length}
+                                    </span>
+                                )}
+                            </div>
+                            {step > 0 && step <= questions.length && (
+                                <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-full bg-blue-500 transition-all duration-500 ease-out" style={{ width: `${currentProgress}%` }} />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Pantalla de Inicio */}
+                        {step === 0 && (
+                            <div className="flex-1 p-8 flex flex-col items-center justify-center text-center space-y-8 animate-in">
+                                <div className="w-24 h-24 bg-blue-50 rounded-[2rem] flex items-center justify-center text-blue-600 rotate-6 shadow-inner">
+                                    <Icon name="heart" />
+                                </div>
+                                <div className="space-y-4">
+                                    <h1 className="text-4xl font-black text-slate-900 leading-none uppercase">¿Cuántos años te quedan?</h1>
+                                    <p className="text-slate-500 font-medium leading-relaxed">
+                                        Descubre tu esperanza de vida basada en el análisis científico del informe técnico de longevidad.
+                                    </p>
+                                </div>
+                                <div className="bg-amber-50 border border-amber-100 p-5 rounded-3xl flex gap-4 text-left shadow-sm">
+                                    <div className="text-amber-500 shrink-0"><Icon name="alert" /></div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] text-amber-900 font-black uppercase tracking-widest">Aviso Importante</p>
+                                        <p className="text-[11px] text-amber-800 font-medium italic leading-tight">
+                                            Este sistema es un simulador estadístico educativo. No constituye consejo médico profesional.
+                                        </p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setStep(1)} className="w-full bg-slate-900 text-white font-black py-6 rounded-3xl shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3 text-lg">
+                                    EMPEZAR ANÁLISIS <Icon name="chevron" color="white" />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Cuestionario */}
+                        {step > 0 && step <= questions.length && (
+                            <div className="flex-1 p-8 flex flex-col animate-in">
+                                <div className="flex items-center gap-4 mb-8">
+                                    <div className="p-4 bg-slate-50 rounded-2xl text-slate-400">
+                                        <Icon name={questions[step-1].icon} />
+                                    </div>
+                                    <h2 className="text-2xl font-black text-slate-800 leading-tight">{questions[step-1].title}</h2>
+                                </div>
+                                <div className="flex-1 flex flex-col justify-center">
+                                    {questions[step-1].type === 'number' ? (
+                                        <div className="space-y-6">
+                                            <input type="number" autoFocus placeholder={questions[step-1].placeholder} className="w-full text-7xl font-black text-center border-b-4 border-slate-100 focus:border-blue-500 outline-none pb-4 text-slate-900 transition-colors" value={answers.age || ''} onChange={(e) => setAnswers({...answers, age: e.target.value})} />
+                                            <p className="text-center text-slate-400 text-sm font-medium italic">Introduce tu edad real para el cálculo final</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {questions[step-1].options.map((opt, idx) => (
+                                                <button key={idx} onClick={() => handleOptionSelect(questions[step-1].id, opt)} className={`w-full text-left p-6 rounded-3xl border-2 transition-all active:scale-[0.98] ${answers[questions[step-1].id]?.val === opt.val ? 'border-blue-500 bg-blue-50 ring-4 ring-blue-50' : 'border-slate-50 bg-slate-50/50 hover:border-slate-200 hover:bg-slate-50'}`}>
+                                                    <span className="font-black text-slate-800 text-lg uppercase tracking-tight">{opt.label}</span>
+                                                    <span className="text-xs text-slate-500 font-semibold leading-none">{opt.desc}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex gap-4 pt-8 border-t border-slate-50 mt-8">
+                                    <button onClick={() => setStep(step - 1)} className="flex-1 py-4 font-black text-slate-400 uppercase tracking-widest text-[10px] flex items-center justify-center gap-1 hover:text-slate-600 transition-colors">← Volver</button>
+                                    {questions[step-1].type === 'number' && (
+                                        <button disabled={!answers.age} onClick={() => setStep(step + 1)} className="flex-[2] bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg disabled:opacity-20 transition-all uppercase tracking-widest text-xs">Continuar</button>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Resultados */}
+                        {step > questions.length && (
+                            <div className="flex-1 p-8 flex flex-col items-center justify-center text-center space-y-10 animate-in">
+                                <div className="relative flex items-center justify-center">
+                                    <div className="w-48 h-48 rounded-full border-[12px] border-slate-50 flex items-center justify-center bg-white shadow-xl">
+                                        <div className="flex flex-col">
+                                            <span className="text-6xl font-black text-slate-900 leading-none">{results.total}</span>
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3">Años de Vida</span>
+                                        </div>
+                                    </div>
+                                    <div className="absolute inset-0 w-48 h-48 rounded-full border-[12px] border-blue-500 border-t-transparent animate-spin-custom pointer-events-none opacity-40"></div>
+                                </div>
+                                <div className="space-y-3">
+                                    <h3 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Tu Pronóstico</h3>
+                                    <p className="text-slate-500 font-medium px-6 text-sm">Basado en tu perfil actual, te quedan aproximadamente:</p>
+                                    <div className="text-4xl font-black text-blue-600 tabular-nums">{results.remaining} AÑOS</div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 w-full">
+                                    <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 text-left">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Impacto Genético</span>
+                                        <span className="font-bold text-slate-800">54% (Fijo)</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 text-left">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase block mb-1">Modificable</span>
+                                        <span className="font-bold text-slate-800">46% (Conducta)</span>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-900 text-white p-6 rounded-[2.5rem] text-left w-full space-y-4 shadow-2xl">
+                                    <div className="flex items-center gap-2 text-blue-400">
+                                        <Icon name="info" />
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Nota de Longevidad</span>
+                                    </div>
+                                    <p className="text-xs text-slate-300 leading-relaxed font-medium">
+                                        La genética establece el "techo", pero tu entorno y hábitos determinan si lo alcanzas. Factores como la <strong>educación</strong> y el <strong>optimismo</strong> actúan como polipíldoras biológicas.
+                                    </p>
+                                </div>
+                                <button onClick={() => {setStep(0); setAnswers({});}} className="w-full border-2 border-slate-900 text-slate-900 font-black py-5 rounded-3xl flex items-center justify-center gap-2 active:bg-slate-50 transition-all uppercase tracking-widest text-xs">
+                                    <Icon name="refresh" /> Repetir Evaluación
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="p-4 bg-slate-50 border-t border-slate-100 text-[8px] text-slate-400 text-center font-black tracking-[0.3em] uppercase opacity-60">
+                            Longevidad Humana • Informe Técnico 2026
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
